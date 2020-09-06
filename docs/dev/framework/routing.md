@@ -139,6 +139,147 @@ Hello World!
 ```
 
 
+## Request Attributes
+
+When defining a route Symfony allows you to set some default parameters for the
+request handled by this route. As of Contao **4.9** there are two different special
+request attributes that Contao will listen to during the handling of a request,
+which will be outlined here. Contao will also set additional request attributes
+which you can then access within your controller.
+
+
+### Request Scope
+
+The scope of a request can be set via the `_scope` request attribute. If the value
+of this attribute is either `frontend` or `backend`, the request will be identified
+as a "Contao request" and thus handled accordingly with the following effects:
+
+* The `_locale` request attribute will be automatically set by Contao, according
+  to which language the current request belongs to (depending on your site structure, 
+  if the request can be matched there) or the `Accept-Language` request header.
+* The CSRF protection is automatically enabled.
+* The user session is automatically recored in the database, if a logged in user 
+  is present.
+* The output of content elements and front end modules change, depending on the
+  scope. For example, front end modules typically do not show their output in the
+  back end, but instead show the headline and name of the module instead.
+* If the scope is `backend`, Contao will automatically generate a "referer ID token"
+  and store it as another request attribute under `_contao_referer_id`. Plus the
+  current and last URL will be stored in the session. This is used in the back end
+  for the "go back" links for example.
+* Depending on the scope, different session bags will be used in the session and
+  the session bag's data will be replaced with the user's stored session from the
+  database.
+
+{{% notice tip %}}
+In your own services you can query the current scope using the [`ScopeMatcher`](/reference/services/#scopematcher)
+service.
+{{% /notice %}}
+
+The following example will execute any request to the defined controller in the
+Contao `frontend` scope:
+
+```php
+// src/Controller/ExampleController.php
+namespace App\Controller;
+
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+
+/**
+ * @Route("/example", name=ExampleController::class, defaults={"_scope": "frontend"})
+ */
+class ExampleController
+{
+    public function __invoke(): Response
+    {
+        return new Response('I am a Contao request!');
+    }
+}
+```
+
+See the [Back End Routes Guide][BackEndRoutes] for a full example and explanation
+on how to create your own controller for the Contao back end.
+
+
+### CSRF Protection
+
+Contao comes with its own protection against CSRF attacks. This protection can be
+enabled for your own controller by using the `_token_check` request attribute. The
+protection is enabled by default for any Contao request (and thus can be disabled
+using the request attribute), but needs to be manually enabled for your custom controller
+that does not use either of Contao's scopes.
+
+```php
+// src/Controller/ExampleController.php
+namespace App\Controller;
+
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+
+/**
+ * @Route("/example", name=ExampleController::class, defaults={"_token_check": true})
+ */
+class ExampleController
+{
+    public function __invoke(): Response
+    {
+        return new Response('I am a CSRF protected controller.');
+    }
+}
+```
+
+See the article on [Request Tokens][RequestTokens] for more details.
+
+
+### Page Model
+
+{{< version "4.7" >}}
+
+If a request matches a page within the defined site structure of your Contao
+instance then Contao's `RouteProvider` will store the model of that page as a request 
+attribute, so that it is accessible anywhere via the request object. The attribute's 
+name is `pageModel` and its value will be a `\Contao\PageModel` instance.
+
+```php
+namespace App\EventListener;
+
+use Contao\PageModel;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Terminal42\ServiceAnnotationBundle\Annotation\ServiceTag;
+
+/**
+ * @ServiceTag("kernel.event_listener", name="kernel.requset")
+ */
+class RequestListener
+{
+    public function __invoke(RequestEvent $event): void
+    {
+        $request = $event->getRequest();
+
+        if (!$request->attributes->has('pageModel')) {
+            return;
+        }
+
+        /** @var PageModel $page */
+        $page = $request->attributes->get('pageModel');
+
+        $title = $page->pageTitle ?: $page->title;
+
+        // …
+    }
+}
+```
+
+{{% notice info %}}
+Within the sub request of a fragment, this attribute is currently only the database
+_ID_ of the page, not a model instance.
+{{% /notice %}}
+
+
+
 [SymfonyRouting]: https://symfony.com/doc/current/routing.html
 [InvokableController]: https://symfony.com/doc/current/controller/service.html#invokable-controllers
 [FQCN]: https://www.php-fig.org/psr/psr-4/
+[BackEndRoutes]: /guides/back-end-routes/
+[RequestTokens]: /framework/request-tokens/
