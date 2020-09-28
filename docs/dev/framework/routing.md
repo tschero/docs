@@ -277,6 +277,15 @@ _ID_ of the page, not a model instance.
 {{% /notice %}}
 
 
+## Page Controllers
+
+{{< version "4.10" >}}
+
+Starting with Contao **4.10** you can implement so called _Page Controllers_. These
+are special page types implemented as controllers in order to handle the request
+to the route of a specific page type within the Contao site structure.
+
+
 
 [SymfonyRouting]: https://symfony.com/doc/current/routing.html
 [InvokableController]: https://symfony.com/doc/current/controller/service.html#invokable-controllers
