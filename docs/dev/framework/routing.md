@@ -277,6 +277,13 @@ _ID_ of the page, not a model instance.
 {{% /notice %}}
 
 
+### Maintenance Mode
+
+The Contao back end allows you to enable a maintenance mode in the front end. The
+maintenance mode is applied globally, but you can exempt routes by using the `_bypass_maintenance`
+request attribute for your own routes.
+
+
 ## Page Controllers
 
 {{< version "4.10" >}}
@@ -284,7 +291,6 @@ _ID_ of the page, not a model instance.
 Starting with Contao **4.10** you can implement so called _Page Controllers_. These
 are special page types implemented as controllers in order to handle the request
 to the route of a specific page type within the Contao site structure.
-
 
 
 [SymfonyRouting]: https://symfony.com/doc/current/routing.html
